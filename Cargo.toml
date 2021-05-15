@@ -1,6 +1,6 @@
 [package]
 name = "lis2dw12"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["David Haig <david@ninjametal.com>"]
 license = "Apache-2.0 OR MIT"
 repository = "https://github.com/ninjasource/lis2dw12"
@@ -12,7 +12,7 @@ categories = ["embedded", "no-std"]
 edition = "2018"
 
 [features]
-default = ["out_f32"]
+default = []
 out_f32 = ["num-traits", "num-derive", "cast"]
 
 [dependencies]
