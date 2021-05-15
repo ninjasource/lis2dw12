@@ -2,18 +2,25 @@
 name = "lis2dw12"
 version = "0.1.0"
 authors = ["David Haig <david@ninjametal.com>"]
+license = "Apache-2.0 OR MIT"
+repository = "https://github.com/ninjasource/lis2dw12"
+documentation = "https://docs.rs/lis2dw12"
+description = "A no_std compatible Rust driver for the low power ST 3-Axis MEMS 14-bit accelerometer LIS2DW12 using the SPI bus"
+readme = "README.md"
+keywords = ["accelerometer", "sensor", "spi", "driver", "embedded", "no_std"]
+categories = ["embedded", "no-std"]
 edition = "2018"
 
 [features]
-default = []
-out_f32 = ["num-traits", "num-derive"]
+default = ["out_f32"]
+out_f32 = ["num-traits", "num-derive", "cast"]
 
 [dependencies]
 embedded-hal = "0.2.5"
 accelerometer = "0.12.0"
-num-traits = { version = "0.2.14", optional = true }
-num-derive = { version = "0.3.3", optional = true }
-cast = { version = "0.2.5", default-features = false }
+num-traits = { version = "0.2.14", optional = true, default-features = false }
+num-derive = { version = "0.3.3", optional = true, default-features = false }
+cast = { version = "0.2.5", optional = true, default-features = false }
 
 [profile.release]
 lto = true

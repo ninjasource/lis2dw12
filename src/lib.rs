@@ -1,16 +1,18 @@
 #![no_std]
 
-use accelerometer::{vector::I16x3, RawAccelerometer};
-use embedded_hal::blocking::spi::Transfer;
-use embedded_hal::digital::v2::OutputPin;
 mod reg;
 pub use crate::reg::*;
+use accelerometer::{vector::I16x3, RawAccelerometer};
 use core::fmt::Debug;
+use embedded_hal::blocking::spi::Transfer;
+use embedded_hal::digital::v2::OutputPin;
 
 #[cfg(feature = "out_f32")]
 pub use accelerometer::{vector::F32x3, Accelerometer};
+
 #[cfg(feature = "out_f32")]
 use cast::f32;
+
 #[cfg(feature = "out_f32")]
 use num_traits::FromPrimitive;
 

@@ -28,7 +28,7 @@ rprintln!("raw: {:?}", raw);
 or take a look at a working example using an STM32 bluepill [here](https://github.com/ninjasource/accelerometer-test)
 
 
-> Note that this crate implements the traits in the accelerometer crate. If you have problems figuring out how to propogate errors then take a look at the bluepill working example linked above.
+> Note that this crate implements the traits in the accelerometer crate. If you have problems figuring out how to propagate errors then take a look at the bluepill working example linked above.
 
 ## Features
 
