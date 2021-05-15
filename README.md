@@ -1,6 +1,6 @@
 # `lis2dw12`
 
-A no_std compatible Rust driver for the low power ST 3-Axis MEMS accelerometer LIS2DW12 using the SPI bus
+A no_std compatible Rust driver for the low power ST 3-Axis MEMS 14-bit accelerometer LIS2DW12 using the SPI bus
 
 ## Example
 
@@ -14,9 +14,9 @@ let mut accel = Lis2dw12::new(spi, cs);
 accel.check_who_am_i()?;
 
 // set up the device
-accel.set_mode(OperatingMode::HighPerformance)?;
+accel.set_operating_mode(OperatingMode::HighPerformance)?;
 accel.set_low_noise(true)?;
-accel.set_full_scale_selection(FullScaleSelection::PlusMinus2)?;
+accel.set_full_scale_selection(FullScaleSelection::PlusMinus2G)?;
 accel.set_output_data_rate(OutputDataRate::Hp100HzLp100Hz)?; // 100 Hz
 
 // get raw data
@@ -28,8 +28,20 @@ rprintln!("raw: {:?}", raw);
 or take a look at a working example using an STM32 bluepill [here](https://github.com/ninjasource/accelerometer-test)
 
 
-> Note that this crate implements the traits in the accelerometer crate. If you have problems figuring out how to propogate errors then take a look at the working example
+> Note that this crate implements the traits in the accelerometer crate. If you have problems figuring out how to propogate errors then take a look at the bluepill working example linked above.
 
+## Features
+
+This crate implements the `RawAccelerometer<I16x3>` trait by default. If you want need the `Accelerometer` trait then enable the `out_f32` feature. For example:
+
+```toml
+# cargo.toml
+lis2dw12 = { version = "0.1.0", features = ["out_f32"] }
+```
+
+## Resources
+
+[LIS2DW12 Datasheet](https://www.st.com/resource/en/datasheet/lis2dw12.pdf)
 
 ## License
 

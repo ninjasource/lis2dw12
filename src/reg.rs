@@ -1,5 +1,8 @@
 #![allow(non_upper_case_globals)]
 
+#[cfg(feature = "out_f32")]
+use num_derive::FromPrimitive;
+
 /// Register mapping
 #[allow(dead_code)]
 #[allow(non_camel_case_types)]
@@ -48,9 +51,10 @@ impl Register {
         self as u8
     }
 }
-
+#[derive(Copy, Clone)]
+#[cfg_attr(feature = "out_f32", derive(FromPrimitive))]
 pub enum OutputDataRate {
-    PowerDown = 0x00,       // power down
+    PowerDown = 0x00,       // power down (default)
     Hp12Hz5Lp1Hz6 = 0x01,   // High-Performance 12.5Hz / Low-Power 1.6 Hz
     Hp12Hz5Lp12Hz5 = 0x02,  // High-Performance 12.5 Hz / Low-Power mode 12.5 Hz
     Hp25HzLp25Hz = 0x03,    // High-Performance 25 Hz / Low-Power 25 Hz
@@ -62,12 +66,14 @@ pub enum OutputDataRate {
     Hp1600HzLp200Hz = 0x09, // High-Performance 1600 Hz / Low-Power mode 200 Hz
 }
 
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum OperatingMode {
     LowPower = 0x00,        // Low-Power Mode (12/14-bit resolution)
-    HighPerformance = 0x01, // High-Performance Mode (14-bit resolution)
+    HighPerformance = 0x01, // High-Performance Mode (14-bit resolution) (ignore LowPowerMode setting)
     SingleOnDemand = 0x02,  // Single data conversion on demand mode (12/14-bit resolution)
 }
 
+#[derive(Copy, Clone)]
 pub enum LowPowerMode {
     Mode1 = 0x00, // Low-Power Mode 1 (12-bit resolution)
     Mode2 = 0x01, // Low-Power Mode 2 (14-bit resolution)
@@ -75,11 +81,12 @@ pub enum LowPowerMode {
     Mode4 = 0x03, // Low-Power Mode 4 (14-bit resolution)
 }
 
+#[derive(Copy, Clone)]
 pub enum FullScaleSelection {
-    PlusMinus2 = 0x00,
-    PlusMinus4 = 0x01,
-    PlusMinus8 = 0x02,
-    PlusMinus16 = 0x03,
+    PlusMinus2G = 0x00, // default
+    PlusMinus4G = 0x01,
+    PlusMinus8G = 0x02,
+    PlusMinus16G = 0x03,
 }
 
 /// WHO_AM_I device identification register

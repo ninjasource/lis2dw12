@@ -1,5 +1,4 @@
 #![no_std]
-#![allow(dead_code)]
 
 use accelerometer::{vector::I16x3, RawAccelerometer};
 use embedded_hal::blocking::spi::Transfer;
@@ -7,6 +6,13 @@ use embedded_hal::digital::v2::OutputPin;
 mod reg;
 pub use crate::reg::*;
 use core::fmt::Debug;
+
+#[cfg(feature = "out_f32")]
+pub use accelerometer::{vector::F32x3, Accelerometer};
+#[cfg(feature = "out_f32")]
+use cast::f32;
+#[cfg(feature = "out_f32")]
+use num_traits::FromPrimitive;
 
 #[derive(Debug)]
 pub enum Error<SpiError, PinError> {
@@ -26,6 +32,12 @@ impl<SpiError, PinError> From<SpiError> for Error<SpiError, PinError> {
 pub struct Lis2dw12<SPI, CS> {
     spi: SPI,
     cs: CS,
+    #[cfg(feature = "out_f32")]
+    scale: FullScaleSelection,
+    #[cfg(feature = "out_f32")]
+    operating_mode: OperatingMode,
+    #[cfg(feature = "out_f32")]
+    low_power_mode: LowPowerMode,
 }
 
 impl<SPI, SpiError, CS, PinError> Lis2dw12<SPI, CS>
@@ -34,7 +46,16 @@ where
     CS: OutputPin<Error = PinError>,
 {
     pub fn new(spi: SPI, cs: CS) -> Self {
-        Self { spi, cs }
+        Self {
+            spi,
+            cs,
+            #[cfg(feature = "out_f32")]
+            scale: FullScaleSelection::PlusMinus2G,
+            #[cfg(feature = "out_f32")]
+            operating_mode: OperatingMode::LowPower,
+            #[cfg(feature = "out_f32")]
+            low_power_mode: LowPowerMode::Mode1,
+        }
     }
 
     // destroy the instance and return the spi bus and its cs pin
@@ -58,14 +79,29 @@ where
         let reset_bits = 0b0000_0011;
         self.reg_reset_bits(Register::CTRL1, reset_bits)?;
         self.reg_set_bits(Register::CTRL1, low_power_mode as u8)?;
+
+        #[cfg(feature = "out_f32")]
+        {
+            self.low_power_mode = low_power_mode;
+        }
+
         Ok(())
     }
 
-    pub fn set_mode(&mut self, mode: OperatingMode) -> Result<(), Error<SpiError, PinError>> {
+    pub fn set_operating_mode(
+        &mut self,
+        mode: OperatingMode,
+    ) -> Result<(), Error<SpiError, PinError>> {
         let reset_bits = 0b0000_1100;
         let set_bits = (mode as u8) << 2;
         self.reg_reset_bits(Register::CTRL1, reset_bits)?;
         self.reg_set_bits(Register::CTRL1, set_bits)?;
+
+        #[cfg(feature = "out_f32")]
+        {
+            self.operating_mode = mode;
+        }
+
         Ok(())
     }
 
@@ -88,6 +124,12 @@ where
         let set_bits = (full_scale_selection as u8) << 4;
         self.reg_reset_bits(Register::CTRL1, reset_bits)?;
         self.reg_set_bits(Register::CTRL1, set_bits)?;
+
+        #[cfg(feature = "out_f32")]
+        {
+            self.scale = full_scale_selection;
+        }
+
         Ok(())
     }
 
@@ -213,5 +255,83 @@ where
             ((buf[2] as u16) + ((buf[3] as u16) << 8)) as i16,
             ((buf[4] as u16) + ((buf[5] as u16) << 8)) as i16,
         ))
+    }
+}
+
+#[cfg(feature = "out_f32")]
+impl<SPI, SpiError, CS, PinError> Accelerometer for Lis2dw12<SPI, CS>
+where
+    SPI: Transfer<u8, Error = SpiError>,
+    CS: OutputPin<Error = PinError>,
+    SpiError: Debug,
+    PinError: Debug,
+{
+    type Error = Error<SpiError, PinError>;
+
+    /// Get normalized ±g reading from the accelerometer
+    fn accel_norm(&mut self) -> Result<F32x3, accelerometer::Error<Self::Error>> {
+        let acc_raw: I16x3 = self.accel_raw()?;
+
+        let sensitivity: f32 = match self.scale {
+            FullScaleSelection::PlusMinus2G => 0.001,
+            FullScaleSelection::PlusMinus4G => 0.002,
+            FullScaleSelection::PlusMinus8G => 0.004,
+            FullScaleSelection::PlusMinus16G => 0.012,
+        };
+
+        // low-power mode1 is only 12 bits (stored in a 16 bit number)
+        let num_throwaway_bits = match self.low_power_mode {
+            LowPowerMode::Mode1 => 4,
+            _ => 2,
+        };
+
+        // if operating in high performance mode ignore the low power setting above
+        let num_throwaway_bits = match self.operating_mode {
+            OperatingMode::HighPerformance => 2,
+            _ => num_throwaway_bits,
+        };
+
+        Ok(F32x3::new(
+            f32(acc_raw.x >> num_throwaway_bits) * sensitivity,
+            f32(acc_raw.y >> num_throwaway_bits) * sensitivity,
+            f32(acc_raw.z >> num_throwaway_bits) * sensitivity,
+        ))
+    }
+
+    /// Get sample rate of accelerometer in Hz
+    fn sample_rate(&mut self) -> Result<f32, accelerometer::Error<Self::Error>> {
+        let ord_raw = self.read_reg(Register::CTRL1)? >> 4;
+
+        let rate = match self.operating_mode {
+            OperatingMode::LowPower => match FromPrimitive::from_u8(ord_raw) {
+                Some(OutputDataRate::PowerDown) => 0.0,
+                Some(OutputDataRate::Hp12Hz5Lp1Hz6) => 1.6,
+                Some(OutputDataRate::Hp12Hz5Lp12Hz5) => 12.5,
+                Some(OutputDataRate::Hp25HzLp25Hz) => 25.0,
+                Some(OutputDataRate::Hp50HzLp50Hz) => 50.0,
+                Some(OutputDataRate::Hp100HzLp100Hz) => 100.0,
+                Some(OutputDataRate::Hp200HzLp200Hz) => 200.0,
+                Some(OutputDataRate::Hp400HzLp200Hz) => 200.0,
+                Some(OutputDataRate::Hp800HzLp200Hz) => 200.0,
+                Some(OutputDataRate::Hp1600HzLp200Hz) => 200.0,
+                None => 0.0,
+            },
+            OperatingMode::HighPerformance => match FromPrimitive::from_u8(ord_raw) {
+                Some(OutputDataRate::PowerDown) => 0.0,
+                Some(OutputDataRate::Hp12Hz5Lp1Hz6) => 12.5,
+                Some(OutputDataRate::Hp12Hz5Lp12Hz5) => 12.5,
+                Some(OutputDataRate::Hp25HzLp25Hz) => 25.0,
+                Some(OutputDataRate::Hp50HzLp50Hz) => 50.0,
+                Some(OutputDataRate::Hp100HzLp100Hz) => 100.0,
+                Some(OutputDataRate::Hp200HzLp200Hz) => 200.0,
+                Some(OutputDataRate::Hp400HzLp200Hz) => 400.0,
+                Some(OutputDataRate::Hp800HzLp200Hz) => 800.0,
+                Some(OutputDataRate::Hp1600HzLp200Hz) => 1600.0,
+                None => 0.0,
+            },
+            OperatingMode::SingleOnDemand => 0.0,
+        };
+
+        Ok(rate)
     }
 }
