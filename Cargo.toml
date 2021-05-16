@@ -1,6 +1,6 @@
 [package]
 name = "lis2dw12"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["David Haig <david@ninjametal.com>"]
 license = "Apache-2.0 OR MIT"
 repository = "https://github.com/ninjasource/lis2dw12"
@@ -24,4 +24,3 @@ cast = { version = "0.2.5", optional = true, default-features = false }
 
 [profile.release]
 lto = true
-

@@ -32,7 +32,7 @@ or take a look at a working example using an STM32 bluepill [here](https://githu
 
 ## Features
 
-This crate implements the `RawAccelerometer<I16x3>` trait by default. If you want need the `Accelerometer` trait then enable the `out_f32` feature. For example:
+This crate implements the `RawAccelerometer<I16x3>` trait by default. If you need the `Accelerometer` trait then enable the `out_f32` feature. For example:
 
 ```toml
 # cargo.toml

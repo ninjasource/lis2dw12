@@ -38,8 +38,6 @@ pub struct Lis2dw12<SPI, CS> {
     scale: FullScaleSelection,
     #[cfg(feature = "out_f32")]
     operating_mode: OperatingMode,
-    #[cfg(feature = "out_f32")]
-    low_power_mode: LowPowerMode,
 }
 
 impl<SPI, SpiError, CS, PinError> Lis2dw12<SPI, CS>
@@ -55,8 +53,6 @@ where
             scale: FullScaleSelection::PlusMinus2G,
             #[cfg(feature = "out_f32")]
             operating_mode: OperatingMode::LowPower,
-            #[cfg(feature = "out_f32")]
-            low_power_mode: LowPowerMode::Mode1,
         }
     }
 
@@ -81,12 +77,6 @@ where
         let reset_bits = 0b0000_0011;
         self.reg_reset_bits(Register::CTRL1, reset_bits)?;
         self.reg_set_bits(Register::CTRL1, low_power_mode as u8)?;
-
-        #[cfg(feature = "out_f32")]
-        {
-            self.low_power_mode = low_power_mode;
-        }
-
         Ok(())
     }
 
@@ -124,8 +114,8 @@ where
     ) -> Result<(), Error<SpiError, PinError>> {
         let reset_bits = 0b0011_0000;
         let set_bits = (full_scale_selection as u8) << 4;
-        self.reg_reset_bits(Register::CTRL1, reset_bits)?;
-        self.reg_set_bits(Register::CTRL1, set_bits)?;
+        self.reg_reset_bits(Register::CTRL6, reset_bits)?;
+        self.reg_set_bits(Register::CTRL6, set_bits)?;
 
         #[cfg(feature = "out_f32")]
         {
@@ -275,28 +265,16 @@ where
         let acc_raw: I16x3 = self.accel_raw()?;
 
         let sensitivity: f32 = match self.scale {
-            FullScaleSelection::PlusMinus2G => 0.001,
-            FullScaleSelection::PlusMinus4G => 0.002,
-            FullScaleSelection::PlusMinus8G => 0.004,
-            FullScaleSelection::PlusMinus16G => 0.012,
-        };
-
-        // low-power mode1 is only 12 bits (stored in a 16 bit number)
-        let num_throwaway_bits = match self.low_power_mode {
-            LowPowerMode::Mode1 => 4,
-            _ => 2,
-        };
-
-        // if operating in high performance mode ignore the low power setting above
-        let num_throwaway_bits = match self.operating_mode {
-            OperatingMode::HighPerformance => 2,
-            _ => num_throwaway_bits,
+            FullScaleSelection::PlusMinus2G => 0.000061037, // 1 / (MAX(i16) / 2)
+            FullScaleSelection::PlusMinus4G => 0.000122074, // 1 / (MAX(i16) / 4)
+            FullScaleSelection::PlusMinus8G => 0.000244148, // 1 / (MAX(i16) / 8)
+            FullScaleSelection::PlusMinus16G => 0.000488296, // 1 / (MAX(i16) / 16)
         };
 
         Ok(F32x3::new(
-            f32(acc_raw.x >> num_throwaway_bits) * sensitivity,
-            f32(acc_raw.y >> num_throwaway_bits) * sensitivity,
-            f32(acc_raw.z >> num_throwaway_bits) * sensitivity,
+            f32(acc_raw.x) * sensitivity,
+            f32(acc_raw.y) * sensitivity,
+            f32(acc_raw.z) * sensitivity,
         ))
     }
 
