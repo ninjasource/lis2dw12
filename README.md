@@ -39,7 +39,7 @@ This crate implements the `RawAccelerometer<I16x3>` trait by default. If you nee
 lis2dw12 = { version = "0.1.0", features = ["out_f32"] }
 ```
 
-This crate also exposes an async interface which can be found in the non_blocking module. To use this module you must enable the `non_blocking` feature. This is only available on Rust nightly.
+This crate also exposes an experimental async interface which can be found in the non_blocking module. To use this module you must enable the `non_blocking` feature. This is only available on Rust nightly.
 
 ```toml
 # cargo.toml for async (requires Nightly)
