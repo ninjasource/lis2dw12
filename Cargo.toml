@@ -1,6 +1,6 @@
 [package]
 name = "lis2dw12"
-version = "0.1.3"
+version = "0.1.4"
 authors = ["David Haig <david@ninjametal.com>"]
 license = "Apache-2.0 OR MIT"
 repository = "https://github.com/ninjasource/lis2dw12"
@@ -24,8 +24,8 @@ num-derive = { version = "0.3.3", optional = true, default-features = false }
 embassy-traits = { version = "0.0.2", optional = true, features = ["defmt"]}
 nb = { version = "1.0" }
 
-# [patch.crates-io]
-# embassy-traits = { git = "https://github.com/embassy-rs/embassy" }
+[patch.crates-io]
+embassy-traits = { version = "0.1.0", git = "https://github.com/embassy-rs/embassy" }
 
 [profile.release]
 lto = true
