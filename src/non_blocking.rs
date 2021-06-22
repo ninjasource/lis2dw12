@@ -88,6 +88,29 @@ where
         self.read_reg(Register::WHO_AM_I).await
     }
 
+    /// Temperature sensor data,
+    /// `OUT_T_H`, `OUT_T_L`
+    pub async fn get_temperature_raw(&mut self) -> Result<(i8, u8), Error<SpiError, PinError>> {
+        let mut buf = [0u8; 2];
+        self.read_regs(Register::OUT_T_L, &mut buf).await?;
+        Ok((buf[1] as i8, buf[0]))
+    }
+
+    /// Temperature sensor data as float, only to be called in high power mode
+    /// `OUT_T_H`, `OUT_T_L` converted to `f32`
+    #[cfg(feature = "out_f32")]
+    pub async fn get_temperature_high_power(&mut self) -> Result<f32, Error<SpiError, PinError>> {
+        let (out_h, out_l) = self.get_temperature_raw().await?;
+
+        // 12-bit resolution
+        let value = (((out_h as i16) << 4) | ((out_l >> 4) as i16)) as i16; // 12 bit mode
+        Ok(value as f32 * 0.0625 + 25.0) // in 12 bit mode each value is 16th of a degree C. Midpoint 25C
+    }
+
+    pub async fn get_temperature_low_power(&mut self) -> Result<i8, Error<SpiError, PinError>> {
+        Ok(self.read_reg(Register::OUT_T).await? as i8 + 25) // midpoint is 25C
+    }
+
     pub async fn get_raw(&mut self) -> Result<I16x3, Error<SpiError, PinError>> {
         let mut buf = [0u8; 6];
         self.read_regs(Register::OUT_X_L, &mut buf).await?;
