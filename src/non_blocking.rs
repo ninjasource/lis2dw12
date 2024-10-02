@@ -1,10 +1,10 @@
 use crate::*;
 use accelerometer::vector::I16x3;
-use embedded_hal::digital::v2::OutputPin;
+use embedded_hal::digital::OutputPin;
 use embedded_hal_async::spi::SpiDevice;
 
 #[cfg(feature = "out_f32")]
-pub use accelerometer::{vector::F32x3, Accelerometer};
+pub use accelerometer::vector::F32x3;
 
 impl<SPI, SpiError, CS, PinError> Lis2dw12<SPI, CS>
 where

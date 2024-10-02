@@ -1,9 +1,8 @@
 use crate::*;
 use accelerometer::{vector::I16x3, RawAccelerometer};
 use core::fmt::Debug;
-use embedded_hal::digital::v2::OutputPin;
-use embedded_hal::spi::FullDuplex;
-use nb::block;
+use embedded_hal::digital::OutputPin;
+use embedded_hal::spi::SpiDevice;
 
 #[cfg(feature = "out_f32")]
 use num_traits::FromPrimitive;
@@ -13,7 +12,7 @@ pub use accelerometer::{vector::F32x3, Accelerometer};
 
 impl<SPI, SpiError, CS, PinError> Lis2dw12<SPI, CS>
 where
-    SPI: FullDuplex<u8, Error = SpiError>,
+    SPI: SpiDevice<Error = SpiError>,
     CS: OutputPin<Error = PinError>,
 {
     pub fn check_who_am_i(&mut self) -> Result<(), Error<SpiError, PinError>> {
@@ -175,9 +174,9 @@ where
     }
 
     fn write_then_read(&mut self, request: u8) -> Result<u8, Error<SpiError, PinError>> {
-        block!(self.spi.send(request))?;
-        let result = block!(self.spi.read())?;
-        Ok(result)
+        let mut buf = [request];
+        self.spi.transfer_in_place(&mut buf)?;
+        Ok(buf[0])
     }
 
     fn write_then_read_into(
@@ -185,18 +184,13 @@ where
         request: u8,
         buf: &mut [u8],
     ) -> Result<(), Error<SpiError, PinError>> {
-        block!(self.spi.send(request))?;
-
-        for x in buf {
-            *x = block!(self.spi.read())?;
-        }
-
-        Ok(())
+        self.spi.write(&[request])?;
+        Ok(self.spi.read(buf)?)
     }
 
     fn write_then_write(&mut self, request: u8, data: u8) -> Result<(), Error<SpiError, PinError>> {
-        block!(self.spi.send(request))?;
-        block!(self.spi.send(data))?;
+        self.spi.write(&[request])?;
+        self.spi.write(&[data])?;
         Ok(())
     }
 
@@ -211,7 +205,7 @@ where
 
 impl<SPI, SpiError, CS, PinError> RawAccelerometer<I16x3> for Lis2dw12<SPI, CS>
 where
-    SPI: FullDuplex<u8, Error = SpiError>,
+    SPI: SpiDevice<Error = SpiError>,
     CS: OutputPin<Error = PinError>,
     SpiError: Debug,
     PinError: Debug,
@@ -220,15 +214,14 @@ where
 
     /// Get acceleration reading from the accelerometer
     fn accel_raw(&mut self) -> Result<I16x3, accelerometer::Error<Self::Error>> {
-        let raw = self.get_raw()?;
-        Ok(raw)
+        Ok(self.get_raw()?)
     }
 }
 
 #[cfg(feature = "out_f32")]
 impl<SPI, SpiError, CS, PinError> Accelerometer for Lis2dw12<SPI, CS>
 where
-    SPI: FullDuplex<u8, Error = SpiError>,
+    SPI: SpiDevice< Error = SpiError>,
     CS: OutputPin<Error = PinError>,
     SpiError: Debug,
     PinError: Debug,
