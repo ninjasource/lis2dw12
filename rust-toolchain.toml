@@ -1,5 +1,0 @@
-# NOTE: You only need to use the nightly toolchain when the "non_blocking" feature is enabled
-
-[toolchain]
-# channel = "stable"
-channel = "nightly-2021-05-07"
