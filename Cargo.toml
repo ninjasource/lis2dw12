@@ -1,6 +1,6 @@
 [package]
 name = "lis2dw12"
-version = "0.1.5"
+version = "0.2.0"
 authors = ["David Haig <david@ninjametal.com>"]
 license = "Apache-2.0 OR MIT"
 repository = "https://github.com/ninjasource/lis2dw12"
@@ -9,25 +9,23 @@ description = "A no_std compatible Rust driver for the low power ST 3-Axis MEMS 
 readme = "README.md"
 keywords = ["accelerometer", "sensor", "spi", "driver", "no_std"]
 categories = ["embedded", "no-std"]
-edition = "2018"
+edition = "2021"
 
 [features]
-default = ["non_blocking"]
-non_blocking = ["embassy-traits"] # enables async, requires Nightly. Experimental.
-out_f32 = ["num-traits", "num-derive"] # enables normalised floating point output
+default = ["non_blocking", "out_f32"]
+non_blocking = ["dep:embedded-hal-async"]
+out_f32 = [
+    "dep:num-traits",
+    "dep:num-derive",
+] # enables normalised floating point output
 
 [dependencies]
-embedded-hal = "0.2.5"
-accelerometer = "0.12.0"
-num-traits = { version = "0.2.14", optional = true, default-features = false }
-num-derive = { version = "0.3.3", optional = true, default-features = false }
-# embassy-traits = { version = "0.0.2", optional = true, features = ["defmt"]}
-embassy-traits = { version = "0.1.0", git = "https://github.com/embassy-rs/embassy", optional = true, features = ["defmt"]}
-nb = { version = "1.0" }
+embedded-hal = "1.0.0"
+embedded-hal-async = { version = "1.0.0", optional = true }
 
-# [patch.crates-io]
-# embassy-traits = { version = "0.1.0", git = "https://github.com/embassy-rs/embassy" }
+accelerometer = "0.12.0"
+num-traits = { version = "0.2.19", optional = true, default-features = false }
+num-derive = { version = "0.4.2", optional = true, default-features = false }
 
 [profile.release]
 lto = true
-
